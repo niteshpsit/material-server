@@ -1,5 +1,6 @@
 var express = require('express');
 var constant = require('../config/constant');
+var ReleaseCalendar = require('../models/releasecalendar');
 var router = express.Router();
 
 router.get('/drop', function (req, res, next) {
@@ -9,5 +10,11 @@ router.get('/drop', function (req, res, next) {
 router.get('/releaseType', function (req, res, next) {
     res.json(constant.releaseType);
 });
+
+router.get('/latestRelease',function(req, res, next){
+    ReleaseCalendar.find({},function(err,releases){
+        res.json(releases);
+    })
+})
 
 module.exports = router;
