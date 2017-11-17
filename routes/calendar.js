@@ -10,6 +10,7 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
+
   var { releaseDrop, deliveryType, label, version, planDate } = req.body;
   var releasecalendar = new Releasecalendar({
     releaseDrop: releaseDrop,
@@ -19,7 +20,8 @@ router.post('/', function (req, res, next) {
     planDate: planDate,
     version: version,
   })
-  Releasecalendar.find({ release: releasecalendar.release }, function (err, releases) {
+
+  Releasecalendar.find({ releaseDrop: releaseDrop, deliveryType: deliveryType, label: label }, function (err, releases) {
     if (err) {
       res.status(422).json(err)
       return;
@@ -36,7 +38,6 @@ router.post('/', function (req, res, next) {
       res.json(data);
     });
   })
-
 });
 
 router.put('/', function (req, res, next) {
@@ -102,7 +103,6 @@ router.post('/delete', function (req, res, next) {
       }
       res.json({ message: "Deleted" });
     });
-
   });
 })
 
