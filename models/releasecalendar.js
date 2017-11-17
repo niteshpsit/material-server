@@ -2,14 +2,17 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
+//var handler = require('./commonHandler')
+
 // create a schema
 var releaseCalendarSchema = new Schema({
-    drop: String,
-    type: String,
+    releaseDrop: {type : String, required : true},
+    deliveryType: {type : String, required : true},
     label: String,
-    planDate: Date,
+    release: {type : String, required : true},
+    planDate: {type : Date, required : true},
     actDate: Date,
-    version: String,
+    version: {type : String, required : true},
     status: {
         type: String,
         enum: ['pending', 'done'],
