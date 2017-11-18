@@ -11,6 +11,12 @@ const constant = {
         {"delivery":"1801","id":"4"},
         {"delivery":"1804","id":"5"}
     ],
+    taskType: [
+        {"id":"1","taskType":"BSUC"},
+        {"id":"2","taskType":"PBI"},
+        {"id":"3","taskType":"TR"},
+        {"id":"4","taskType":"CR"}
+    ],
     getReleaseName: function(drop,type,label){
         return drop + " " + type + " " + label;
     }
