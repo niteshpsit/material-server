@@ -5,7 +5,15 @@ var router = express.Router();
 
 /* GET content  listing. */
 router.get('/', function (req, res, next) {
-  ReleaseContent.find({}, (err, contents) => {
+  let { releaseList } = req.query;
+  if(releaseList)
+    releaseList =  releaseList.split(',');
+
+  ReleaseContent.aggregate([
+    { $unwind: "$releases" },
+    { $match: { "releases.name": { $in: releaseList } } },
+    { $group: { _id: "$_id", name: { $first:'$name'}, label:{ $first: '$label'}, releases: { $push: "$releases" } } }
+  ],function(err,contents){
     res.json(contents);
   })
 });
@@ -32,70 +40,70 @@ router.put('/', (req, res, next) => {
   let { label, name, releases, id } = req.body;
 
   async.series([
-    (callback)=>{
+    (callback) => {
       let updatedReleaseContent = {};
       if (label)
         updatedReleaseContent.label = label;
-  
+
       if (name)
         updatedReleaseContent.name = name;
 
-      if( updatedReleaseContent && Object.keys(updatedReleaseContent).length ){
+      if (updatedReleaseContent && Object.keys(updatedReleaseContent).length) {
         ReleaseContent.findOneAndUpdate({ _id: id }, updatedReleaseContent, function (err, release) {
           if (err) {
-            callback(err,null);
+            callback(err, null);
             return;
           }
-          callback(null,true);
+          callback(null, true);
         });
       }
-      else{
-        callback(null,true);
+      else {
+        callback(null, true);
       }
     },
-    (callback)=>{
-      if(releases && releases.length){
+    (callback) => {
+      if (releases && releases.length) {
         async.everySeries(releases, function (release, everyCallback) {
           async.series([
-            function(callback){
+            function (callback) {
               ReleaseContent.findOneAndUpdate(
-                { _id: id, releases: { $elemMatch: { name: release.name }}},
-                { $set: { "releases.$.needToBeDeliver": release.needToBeDeliver, "releases.$.delivered": release.delivered }},
-                function(err,data){
-                  if(data){
-                    everyCallback(null,!err)
+                { _id: id, releases: { $elemMatch: { name: release.name } } },
+                { $set: { "releases.$.needToBeDeliver": release.needToBeDeliver, "releases.$.delivered": release.delivered } },
+                function (err, data) {
+                  if (data) {
+                    everyCallback(null, !err)
                     return;
                   }
                   else {
-                    callback(null,!err);
+                    callback(null, !err);
                   }
                 }
               )
             },
-            function(callback){
+            function (callback) {
               ReleaseContent.findOneAndUpdate(
                 { _id: id },
                 { $push: { releases: release } }
-                ,function(err,data){
-                  callback(null,!err);
+                , function (err, data) {
+                  callback(null, !err);
                 }
               )
             }
-          ],function(err,result){
-            everyCallback(null,!err);
+          ], function (err, result) {
+            everyCallback(null, !err);
           })
         }, function (err, result) {
-          callback(null,true);
+          callback(null, true);
         });
       }
-      else{
-        callback(null,true);
+      else {
+        callback(null, true);
       }
     }
-  ],(err,result)=>{
-    if(err)
-      res.json({message:err})
-    res.json({message:"SuccessFully updated"})
+  ], (err, result) => {
+    if (err)
+      res.json({ message: err })
+    res.json({ message: "SuccessFully updated" })
   })
 
 });
