@@ -1,19 +1,34 @@
 var express = require('express');
 var ReleaseContent = require('../models/releasecontent');
 var async = require('async');
+var constant = require('../config/constant')
 var router = express.Router();
 
+
+router.get('/task', function (req, res, next) {
+  ReleaseContent.find({
+    name: "PBI"
+  }, function (err, calendars) {
+    res.json(calendars);
+  })
+});
+
+router.get('/all', function (req, res, next) {
+  ReleaseContent.find({}, function (err, calendars) {
+    res.json(calendars);
+  })
+});
 /* GET content  listing. */
 router.get('/', function (req, res, next) {
   let { releaseList } = req.query;
-  if(releaseList)
-    releaseList =  releaseList.split(',');
+  if (releaseList)
+    releaseList = releaseList.split(',');
 
   ReleaseContent.aggregate([
     { $unwind: "$releases" },
     { $match: { "releases.name": { $in: releaseList } } },
-    { $group: { _id: "$_id", name: { $first:'$name'}, label:{ $first: '$label'}, releases: { $push: "$releases" } } }
-  ],function(err,contents){
+    { $group: { _id: "$_id", name: { $first: '$name' }, label: { $first: '$label' }, releases: { $push: "$releases" } } }
+  ], function (err, contents) {
     res.json(contents);
   })
 });
@@ -29,7 +44,7 @@ router.post('/', (req, res, next) => {
 
   releaseContent.save(function (err, data) {
     if (err) {
-      res.status(422).json(err)
+      res.status(422).json(constant.getErrorMsgResponseFormate(err))
       return;
     }
     res.json(data);
@@ -102,7 +117,7 @@ router.put('/', (req, res, next) => {
     }
   ], (err, result) => {
     if (err)
-      res.json({ message: err })
+      res.json(constant.getErrorMsgResponseFormate(err))
     res.json({ message: "SuccessFully updated" })
   })
 
@@ -113,12 +128,12 @@ router.post('/delete', function (req, res, next) {
   var { _id } = req.body;
   ReleaseContent.findOne({ _id: _id }, function (err, release) {
     if (err) {
-      res.status(422).json(err)
+      res.status(422).json(constant.getErrorMsgResponseFormate(err))
       return;
     }
     release.remove(function (err) {
       if (err) {
-        res.status(422).json(err)
+        res.status(422).json(constant.getErrorMsgResponseFormate(err))
         return;
       }
       res.json({ message: "Deleted" });

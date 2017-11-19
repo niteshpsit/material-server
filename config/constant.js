@@ -19,6 +19,12 @@ const constant = {
     ],
     getReleaseName: function(drop,type,label){
         return drop + " " + type + " " + label;
+    },
+    getMessageForNotDeliveredList: function(list){
+        return `These task need to be marked as delivered:  ${list} `
+    },
+    getErrorMsgResponseFormate(message){
+        return { message : message }
     }
 }
 
