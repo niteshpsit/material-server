@@ -31,38 +31,72 @@ router.post('/', (req, res, next) => {
 router.put('/', (req, res, next) => {
   let { label, name, releases, id } = req.body;
 
-  async.everySeries(releases, function (release, everyCallback) {
-    async.series([
-      function(callback){
-        ReleaseContent.findOneAndUpdate(
-          { _id: id, releases: { $elemMatch: { name: release.name }}},
-          { $set: { "releases.$.needToBeDeliver": release.needToBeDeliver, "releases.$.delivered": release.delivered }},
-          function(err,data){
-            if(data){
-              everyCallback(null,!err)
-              return;
-            }
-            else {
-              callback(null,!err);
-            }
+  async.series([
+    (callback)=>{
+      let updatedReleaseContent = {};
+      if (label)
+        updatedReleaseContent.label = label;
+  
+      if (name)
+        updatedReleaseContent.name = name;
+
+      if( updatedReleaseContent && Object.keys(updatedReleaseContent).length ){
+        ReleaseContent.findOneAndUpdate({ _id: id }, updatedReleaseContent, function (err, release) {
+          if (err) {
+            callback(err,null);
+            return;
           }
-        )
-      },
-      function(callback){
-        ReleaseContent.findOneAndUpdate(
-          { _id: id },
-          { $push: { releases: release } }
-          ,function(err,data){
-            callback(null,!err);
-          }
-        )
+          callback(null,true);
+        });
       }
-    ],function(err,result){
-      everyCallback(null,!err);
-    })
-  }, function (err, result) {
-    res.json({message:"ok"})
-  });
+      else{
+        callback(null,true);
+      }
+    },
+    (callback)=>{
+      if(releases && releases.length){
+        async.everySeries(releases, function (release, everyCallback) {
+          async.series([
+            function(callback){
+              ReleaseContent.findOneAndUpdate(
+                { _id: id, releases: { $elemMatch: { name: release.name }}},
+                { $set: { "releases.$.needToBeDeliver": release.needToBeDeliver, "releases.$.delivered": release.delivered }},
+                function(err,data){
+                  if(data){
+                    everyCallback(null,!err)
+                    return;
+                  }
+                  else {
+                    callback(null,!err);
+                  }
+                }
+              )
+            },
+            function(callback){
+              ReleaseContent.findOneAndUpdate(
+                { _id: id },
+                { $push: { releases: release } }
+                ,function(err,data){
+                  callback(null,!err);
+                }
+              )
+            }
+          ],function(err,result){
+            everyCallback(null,!err);
+          })
+        }, function (err, result) {
+          callback(null,true);
+        });
+      }
+      else{
+        callback(null,true);
+      }
+    }
+  ],(err,result)=>{
+    if(err)
+      res.json({message:err})
+    res.json({message:"SuccessFully updated"})
+  })
 
 });
 
