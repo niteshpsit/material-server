@@ -17,4 +17,16 @@ router.get('/latestRelease',function(req, res, next){
     })
 })
 
+router.get('/taskType', function (req, res, next) {
+    res.json(constant.taskType);
+});
+
+router.get('/releases',function(req,res,next){
+    ReleaseCalendar.find({status:'pending'},{_id:0,release:1},function(err, releases){
+        let releasesList = releases.map(release=>release.release);
+        res.json(releasesList)
+    })
+});
+
+
 module.exports = router;

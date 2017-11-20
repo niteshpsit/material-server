@@ -1,6 +1,8 @@
 var express = require('express');
 var Releasecalendar = require('../models/releasecalendar');
+var ReleaseContent  = require('../models/releasecontent');
 var constant = require('../config/constant')
+var async = require('async');
 var router = express.Router();
 
 router.get('/', function (req, res, next) {
@@ -78,13 +80,44 @@ router.put('/', function (req, res, next) {
     if (status)
       updatedRelease.status = status
 
-    Releasecalendar.findOneAndUpdate({ _id: id }, updatedRelease, function (err, release) {
+    async.series([
+      (callback)=>{
+        if(status === "done"){
+          ReleaseContent.find({"releases.name": updatedRelease.release},function(err,content){
+            if(err){
+              callback(err,null)
+              return;
+            }
+            if(content && content.length){
+              let message = ""
+              content.forEach((data)=>{
+                message = message + ", " + data.name + " "+ data.label
+              })
+              callback({ message: constant.getMessageForNotDeliveredList(message)},null);
+              return;
+            }
+            callback(null,!err);
+          })
+        }
+        else
+          callback(null,true);
+      },
+      (callback)=>{
+        Releasecalendar.findOneAndUpdate({ _id: id }, updatedRelease, function (err, release) {
+          if (err) {
+            callback(err,null)
+            return;
+          }
+          callback(null,!err)
+        });
+      }
+    ],(err,result)=>{
       if (err) {
-        res.statusCode(422).json(err)
+        res.status(422).json(constant.getErrorMsgResponseFormate(err))
         return;
       }
-      res.json(release);
-    });
+      res.json({ message: "Successfully Updated" });
+    })
   });
 })
 
