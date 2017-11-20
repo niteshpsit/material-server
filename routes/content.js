@@ -5,14 +5,6 @@ var constant = require('../config/constant')
 var router = express.Router();
 
 var ReleaseContent = require('../models/releasecontent');
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
-});
-
-router.post('/',function(){
-  
-});
 
 router.get('/task', function (req, res, next) {
   ReleaseContent.find({

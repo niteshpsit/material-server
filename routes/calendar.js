@@ -1,6 +1,6 @@
 var express = require('express');
 var Releasecalendar = require('../models/releasecalendar');
-var ReleaseContent  = require('../models/releasecontent');
+var ReleaseContent = require('../models/releasecontent');
 var constant = require('../config/constant')
 var async = require('async');
 var router = express.Router();
@@ -45,12 +45,12 @@ router.post('/', function (req, res, next) {
 router.put('/', function (req, res, next) {
   // get the user starlord55
   var { id, releaseDrop, deliveryType, label, version, planDate, actDate, status } = req.body;
-  Releasecalendar.find({  _id:{ $ne: id } , releaseDrop: releaseDrop, deliveryType: deliveryType, label: label }, function (err, releases) {
+  Releasecalendar.find({ _id: { $ne: id }, releaseDrop: releaseDrop, deliveryType: deliveryType, label: label }, function (err, releases) {
     if (err) {
       res.status(422).json(err)
       return;
     }
-    if (releases && releases.length > 0 ) {
+    if (releases && releases.length > 0) {
       res.status(422).json({ message: releases[0].release + ": Entry must be unique:" })
       return;
     }
@@ -65,9 +65,9 @@ router.put('/', function (req, res, next) {
     if (label)
       updatedRelease.label = label
 
-    if(releaseDrop || deliveryType || label)
-      updatedRelease.release = constant.getReleaseName(releaseDrop,deliveryType,label);
-    
+    if (releaseDrop || deliveryType || label)
+      updatedRelease.release = constant.getReleaseName(releaseDrop, deliveryType, label);
+
     if (version)
       updatedRelease.version = version
 
@@ -81,37 +81,44 @@ router.put('/', function (req, res, next) {
       updatedRelease.status = status
 
     async.series([
-      (callback)=>{
-        if(status === "done"){
-          ReleaseContent.find({"releases.name": updatedRelease.release},function(err,content){
-            if(err){
-              callback(err,null)
+      (callback) => {
+        if (status === "done") {
+          ReleaseContent.find({ "releases.name": updatedRelease.release }, function (err, content) {
+            if (err) {
+              callback(err, null)
               return;
             }
-            if(content && content.length){
+            console.log("===con", content);
+            if (content && content.length) {
               let message = ""
-              content.forEach((data)=>{
-                message = message + ", " + data.name + " "+ data.label
+              content.forEach((data) => {
+                data.releases && data.releases.forEach(release => {
+                  if (release.name === updatedRelease.release && release.needToBeDeliver === true && release.delivered === false)
+                    message = message+`   '${data.name} ${data.label}'`
+                })
               })
-              callback({ message: constant.getMessageForNotDeliveredList(message)},null);
-              return;
+              console.log("====mesa", message)
+              if (message && message.trim() !== "") {
+                callback(constant.getMessageForNotDeliveredList(message), null);
+                return;
+              }
             }
-            callback(null,!err);
+            callback(null, !err);
           })
         }
         else
-          callback(null,true);
+          callback(null, true);
       },
-      (callback)=>{
+      (callback) => {
         Releasecalendar.findOneAndUpdate({ _id: id }, updatedRelease, function (err, release) {
           if (err) {
-            callback(err,null)
+            callback(err, null)
             return;
           }
-          callback(null,!err)
+          callback(null, !err)
         });
       }
-    ],(err,result)=>{
+    ], (err, result) => {
       if (err) {
         res.status(422).json(constant.getErrorMsgResponseFormate(err))
         return;
